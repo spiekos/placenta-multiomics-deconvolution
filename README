@@ -1,0 +1,65 @@
+5/8/25
+# initialize output directories
+mkdir output
+mkdir output/logs
+
+# create a file containing all datatypes
+python3 merge_datatype_csv_files.py ./data/all-analytes-final-adjusted.csv ./data/metabolites-final-adjusted.csv ./data/proteins-final-adjusted.csv ./data/mirna-final-adjusted.csv ./data/transcripts-final-adjusted.csv
+
+# identify analyte outliers using MAD normalization - control only
+python3 identify_analyte_outliers_n_of_1.py ./data/metadata-final.csv ./data/metabolites-final-adjusted-limited.csv ./output/metabolites-final-adjusted-imputed.csv ./output/metabolites-final-adjusted-imputed-normalized.csv ./output/metabolite_outliers.csv type=Metabolite > ./output/logs/metabolite_outliers_analysis.log
+
+
+python3 identify_analyte_outliers_n_of_1.py ./data/metadata-final.csv ./data/proteins-final-adjusted-limited.csv ./output/proteins-final-adjusted-imputed.csv ./output/proteins-final-adjusted-imputed-normalized.csv ./output/protein_outliers.csv type=Protein > ./output/logs/protein_outliers_analysis.log
+
+
+python3 identify_analyte_outliers_n_of_1.py ./data/metadata-final.csv ./data/mirna-final-adjusted-limited.csv ./output/mirna-final-adjusted-imputed.csv ./output/mirna-final-adjusted-imputed-normalized.csv ./output/mirna_outliers.csv type=miRNA > ./output/logs/mirna_outliers_analysis.log
+
+
+python3 identify_analyte_outliers_n_of_1.py ./data/metadata-final.csv ./data/transcripts-final-adjusted-limited.csv ./output/transcripts-final-adjusted-imputed.csv ./output/transcripts-final-adjusted-imputed-normalized.csv ./output/transcript_outliers.csv type=Transcript > ./output/logs/transcript_outliers_analysis.log
+
+
+python3 identify_analyte_outliers_n_of_1.py ./data/metadata-final.csv ./data/all-analytes-final-adjusted.csv ./output/all-analytes-final-adjusted-imputed.csv ./output/all-analytes-final-adjusted-imputed-normalized.csv ./output/all_analytes_outliers.csv type=Analytes > ./output/logs/all_analytes_outliers_analysis.log
+
+
+
+# perform k-means clustering by data-type and combined using outlier data as input
+python3 outlier_clustering.py ./output/metabolite_outliers.csv Metabolites k=4 > ./output/logs/metabolite_outlier_clustering.log
+python3 outlier_clustering.py ./output/protein_outliers.csv Proteins k=4 > ./output/logs/protein_outlier_clustering.log
+python3 outlier_clustering.py ./output/miRNA_outliers.csv miRNAs k=4 > ./output/logs/miRNA_outlier_clustering.log
+python3 outlier_clustering.py ./output/transcript_outliers.csv Transcripts k=4 > ./output/logs/transcript_outlier_clustering.log
+python3 outlier_clustering.py ./output/all_analytes_outliers.csv Analytes k=4 > ./output/logs/all_analyte_outlier_clustering.log
+
+
+
+# evaluate difference in clinical features
+python3 eval_clinical_feature_cluster_distribution.py ./data/metadata-final.csv ./output/Analytes_kMeans_Clusters.csv WksGest
+'''
+Median ± IQR of WksGest for each cluster:
+  Label 0: 38.00 ± 3.79
+  Label 1: 34.71 ± 2.07
+  Label 2: 35.07 ± 7.54
+  Label 3: 37.57 ± 3.25
+
+Kruskal-Wallis H-statistic: 13.7367, p-value: 0.003286
+'''
+python3 eval_clinical_feature_cluster_distribution.py ./data/metadata-final.csv ./output/Analytes_kMeans_Clusters.csv MaternalAge
+'''
+Median ± IQR of MaternalAge for each cluster:
+  Label 0: 30.00 ± 8.00
+  Label 1: 27.50 ± 7.25
+  Label 2: 31.00 ± 7.25
+  Label 3: 30.00 ± 11.00
+
+Kruskal-Wallis H-statistic: 2.6349, p-value: 0.4514
+'''
+python3 eval_clinical_feature_cluster_distribution.py ./data/metadata-final.csv ./output/Analytes_kMeans_Clusters.csv PregravidBMI
+'''
+Median ± IQR of PregravidBMI for each cluster:
+  Label 0: nan ± nan
+  Label 1: nan ± nan
+  Label 2: 23.89 ± 4.20
+  Label 3: nan ± nan
+
+Kruskal-Wallis H-statistic: nan, p-value: nan
+'''
